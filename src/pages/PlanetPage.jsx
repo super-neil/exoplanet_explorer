@@ -4,6 +4,7 @@ import StarField from "../components/StarField";
 import Planet3D from "../components/Planet3D";
 import TypeBadge from "../components/TypeBadge";
 import Stat from "../components/Stat";
+import StarSystemDiagram from "../components/StarSystemDiagram";
 import { useNASAExoplanets } from "../hooks/useNASAExoplanets";
 
 // ─── Loading pulse ring while Three.js initializes ────────────────────────────
@@ -212,7 +213,7 @@ export default function PlanetPage() {
           {/* Stats row */}
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: planet.esi != null ? "repeat(5, 1fr)" : "repeat(4, 1fr)",
             gap: 18,
             width: "100%",
             maxWidth: 540,
@@ -226,6 +227,9 @@ export default function PlanetPage() {
             <Stat label="Radius" value={planet.radius ?? "—"} unit={planet.radius ? "R⊕" : ""} accent={planet.accentColor} />
             <Stat label="Mass" value={planet.mass ?? "—"} unit={planet.mass ? "M⊕" : ""} accent={planet.accentColor} />
             <Stat label="Gravity" value={planet.surfaceGravity ?? "—"} unit={planet.surfaceGravity ? "g" : ""} accent={planet.accentColor} />
+            {planet.esi != null && (
+              <Stat label="ESI" value={planet.esi} unit="" accent={planet.esi >= 0.8 ? "#60e060" : planet.esi >= 0.6 ? "#c0e060" : planet.accentColor} />
+            )}
           </div>
 
           {/* Detail cards */}
@@ -324,6 +328,9 @@ export default function PlanetPage() {
               ))}
             </div>
           </div>
+
+          {/* Star System Diagram */}
+          <StarSystemDiagram planet={planet} allPlanets={planets} />
 
           {/* Prev / Next */}
           {(prevPlanet || nextPlanet) && (

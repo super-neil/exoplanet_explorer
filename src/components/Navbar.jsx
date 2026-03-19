@@ -56,6 +56,8 @@ export default function Navbar() {
         {[
           { to: "/", label: "Home" },
           { to: "/catalog", label: "Catalog" },
+          { to: "/starmap", label: "Star Map" },
+          { to: "/timeline", label: "Timeline" },
         ].map(({ to, label }) => {
           const active = location.pathname === to;
           return (

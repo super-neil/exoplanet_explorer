@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import StarField from "../components/StarField";
 import PlanetCard from "../components/PlanetCard";
 import { useNASAExoplanets } from "../hooks/useNASAExoplanets";
@@ -6,7 +7,7 @@ import { useNASAExoplanets } from "../hooks/useNASAExoplanets";
 const PAGE_SIZE = 24;
 
 const TYPE_FILTERS = [
-  "all", "habitable", "Rocky", "Super-Earth", "Gas Giant",
+  "all", "habitable", "earth-like", "Rocky", "Super-Earth", "Gas Giant",
   "Hot Jupiter", "Lava World", "Water World", "Neptune-like",
 ];
 
@@ -42,6 +43,7 @@ function SkeletonCard() {
 
 export default function CatalogPage() {
   const { planets, loading, error, totalCount } = useNASAExoplanets();
+  const navigate = useNavigate();
 
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("default");
@@ -50,6 +52,12 @@ export default function CatalogPage() {
 
   const setFilterAndReset = (val) => { setFilter(val); setPage(1); };
   const setSortAndReset = (val) => { setSort(val); setPage(1); };
+
+  const handleSurpriseMe = () => {
+    if (!planets.length) return;
+    const pick = planets[Math.floor(Math.random() * planets.length)];
+    navigate(`/planet/${pick.slug}`);
+  };
 
   const filtered = useMemo(() => {
     let list = planets;
@@ -64,6 +72,7 @@ export default function CatalogPage() {
       );
     }
     if (filter === "habitable") list = list.filter((p) => p.habitableZone);
+    else if (filter === "earth-like") list = list.filter((p) => p.esi != null && p.esi >= 0.6);
     else if (filter !== "all") list = list.filter((p) => p.type === filter);
 
     if (sort === "distance-asc") list = [...list].sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
@@ -71,6 +80,7 @@ export default function CatalogPage() {
     else if (sort === "mass-asc") list = [...list].sort((a, b) => (a.mass ?? Infinity) - (b.mass ?? Infinity));
     else if (sort === "year-asc") list = [...list].sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999));
     else if (sort === "year-desc") list = [...list].sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+    else if (sort === "esi-desc") list = [...list].sort((a, b) => (b.esi ?? -1) - (a.esi ?? -1));
 
     return list;
   }, [planets, filter, sort, search]);
@@ -121,8 +131,8 @@ export default function CatalogPage() {
           )}
         </div>
 
-        {/* Search */}
-        <div style={{ maxWidth: 420, margin: "0 auto 24px" }}>
+        {/* Search + Surprise Me */}
+        <div style={{ maxWidth: 480, margin: "0 auto 24px", display: "flex", gap: 10 }}>
           <input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -142,6 +152,29 @@ export default function CatalogPage() {
             onFocus={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.26)")}
             onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
           />
+          <button
+            onClick={handleSurpriseMe}
+            disabled={!planets.length}
+            title="Jump to a random planet"
+            style={{
+              flexShrink: 0,
+              padding: "10px 16px",
+              borderRadius: 8,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.05)",
+              color: "rgba(255,255,255,0.6)",
+              fontFamily: "'Space Mono', monospace",
+              fontSize: 11,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              letterSpacing: "0.04em",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "#fff"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
+          >
+            ✦ Surprise Me
+          </button>
         </div>
 
         {/* Type filters */}
@@ -164,7 +197,7 @@ export default function CatalogPage() {
                 transition: "all 0.2s",
               }}
             >
-              {t === "all" ? "All Worlds" : t === "habitable" ? "✦ Habitable" : t}
+              {t === "all" ? "All Worlds" : t === "habitable" ? "✦ Habitable" : t === "earth-like" ? "◎ Earth-like" : t}
             </button>
           ))}
         </div>
@@ -194,6 +227,7 @@ export default function CatalogPage() {
             <option value="distance-asc">Nearest First</option>
             <option value="distance-desc">Farthest First</option>
             <option value="mass-asc">Lightest First</option>
+            <option value="esi-desc">Most Earth-like (ESI)</option>
           </select>
         </div>
 

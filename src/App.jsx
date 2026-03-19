@@ -3,6 +3,8 @@ import Navbar from "./components/Navbar";
 import LandingPage from "./pages/LandingPage";
 import CatalogPage from "./pages/CatalogPage";
 import PlanetPage from "./pages/PlanetPage";
+import StarMapPage from "./pages/StarMapPage";
+import TimelinePage from "./pages/TimelinePage";
 
 export default function App() {
   return (
@@ -12,6 +14,8 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/catalog" element={<CatalogPage />} />
         <Route path="/planet/:slug" element={<PlanetPage />} />
+        <Route path="/starmap" element={<StarMapPage />} />
+        <Route path="/timeline" element={<TimelinePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

@@ -189,6 +189,33 @@ export function autoDescription(name, type, tempK, distLY, starTeff) {
   return `${name} is ${typeDesc}${distStr}${starStr}${tempStr}.`;
 }
 
+// ─── Earth Similarity Index ───────────────────────────────────────────────────
+// Partial ESI using available data. Full formula needs radius, density, escape
+// velocity, and surface temperature. We compute with what we have.
+export function computeESI(radiusEarth, massEarth, tempK) {
+  const term = (val, ref, w) => Math.pow(1 - Math.abs(val - ref) / (val + ref), w);
+  const terms = [];
+  const weights = [];
+
+  if (radiusEarth != null && radiusEarth > 0) {
+    terms.push(term(radiusEarth, 1.0, 0.57));
+    weights.push(0.57);
+    if (massEarth != null && massEarth > 0) {
+      terms.push(term(massEarth / radiusEarth ** 3, 1.0, 1.07)); // density ratio
+      terms.push(term(Math.sqrt(massEarth / radiusEarth), 1.0, 0.70)); // escape vel ratio
+      weights.push(1.07, 0.70);
+    }
+  }
+  if (tempK != null && tempK > 0) {
+    terms.push(term(tempK, 288, 5.58));
+    weights.push(5.58);
+  }
+  if (terms.length < 2) return null;
+  const totalW = weights.reduce((a, b) => a + b, 0);
+  const product = terms.reduce((a, b) => a * b, 1);
+  return Math.round(Math.pow(product, 1 / totalW) * 100) / 100;
+}
+
 // ─── Convert NASA API row → our planet format ─────────────────────────────────
 export function nasaRowToPlanet(row, enhancedData = null) {
   const distLY =
@@ -200,19 +227,26 @@ export function nasaRowToPlanet(row, enhancedData = null) {
   const habitable = isHabitable(tempK, type);
   const visuals = getPlanetVisuals(type, row.pl_name);
 
+  const esi = computeESI(radius, mass, tempK);
+
   return {
     // Enhanced data takes precedence where available
     ...(enhancedData || {}),
     // NASA data fields
     name: row.pl_name,
+    hostname: row.hostname || null,
     slug: slugify(row.pl_name),
     discovery: row.discoverymethod || "Unknown",
     year: row.disc_year,
     distance: distLY,
+    distParsec: row.sy_dist ?? null,
+    ra: row.ra ?? null,
+    dec: row.dec ?? null,
     mass,
     radius,
     orbitalPeriod: row.pl_orbper != null ? Math.round(row.pl_orbper * 10) / 10 : null,
     tempK,
+    esi,
     starType: enhancedData?.starType || starTypeLabel(row.st_teff),
     starTemp: row.st_teff != null ? Math.round(row.st_teff) : null,
     type: enhancedData?.type || type,

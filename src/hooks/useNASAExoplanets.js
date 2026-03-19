@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { nasaRowToPlanet, slugify } from "../lib/planetUtils";
 import { EXOPLANETS as FEATURED } from "../data/exoplanets";
 
-const CACHE_KEY = "nasa_exoplanets_v3";
+const CACHE_KEY = "nasa_exoplanets_v4";
 const CACHE_TTL = 3600 * 6 * 1000; // 6 hours
 
 // Normalize a name to bare alphanumeric for fuzzy matching.
@@ -34,6 +34,8 @@ const NASA_COLUMNS = [
   "pl_eqt",
   "st_teff",
   "sy_dist",
+  "ra",
+  "dec",
   "disc_year",
   "discoverymethod",
   "st_spectype",
@@ -41,9 +43,7 @@ const NASA_COLUMNS = [
 ].join(",");
 
 // Use Vite dev proxy in development; direct URL in production
-const TAP_BASE = import.meta.env.DEV
-  ? "/nasa-tap/sync"
-  : "https://exoplanetarchive.ipac.caltech.edu/TAP/sync";
+const TAP_BASE = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync";
 
 const TAP_URL =
   TAP_BASE +
