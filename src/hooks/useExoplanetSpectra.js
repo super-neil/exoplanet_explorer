@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
 
-// In-memory cache — persists while the tab is open
 const CACHE = new Map();
 
 /**
- * Fetch transmission/emission spectra for a planet from the NASA Exoplanet
- * Archive `spectra` table via the /nasa-tap proxy.
+ * Fetches spectroscopic observation metadata from the NASA Exoplanet Archive
+ * `spectra` table. Each row describes one published observation (instrument,
+ * wavelength range, spec type, ADS bibcode) — not individual data points.
  *
- * Returns { data: Point[], loading, error }
- * where Point = { wl, wlBeg, wlEnd, depth, err1, err2, type, instrument, facility, ref }
- * depth is in ppm (parts per million of transit depth = (Rp/Rs)² × 1e6).
+ * Returns { data: Observation[], loading, error }
+ * where Observation = { specType, instrument, facility, minWl, maxWl, numPoints, bibcode }
  */
 export function useExoplanetSpectra(planetName) {
   const [data, setData] = useState(null);
@@ -29,10 +28,10 @@ export function useExoplanetSpectra(planetName) {
     setError(null);
 
     const query = [
-      "SELECT pl_name,wl,wlbeg,wlend,dp,dpe1,dpe2,trtype,instrument,facility,reference",
+      "SELECT pl_name,spec_type,instrument,facility,minwavelng,maxwavelng,num_datapoints,bibcode",
       "FROM spectra",
       `WHERE pl_name='${planetName.replace(/'/g, "''")}'`,
-      "ORDER BY trtype ASC, wl ASC",
+      "ORDER BY minwavelng ASC",
     ].join(" ");
 
     const url = `/nasa-tap/sync?${new URLSearchParams({ query, format: "json" })}`;
@@ -43,26 +42,18 @@ export function useExoplanetSpectra(planetName) {
         return r.json();
       })
       .then((json) => {
-        // NASA TAP returns { data: [...row-objects] } with format=json
         const rows = Array.isArray(json) ? json : json.data ?? [];
-        const points = rows
-          .filter((r) => r.wl != null && r.dp != null)
-          .map((r) => ({
-            wl: parseFloat(r.wl),
-            wlBeg: r.wlbeg != null ? parseFloat(r.wlbeg) : null,
-            wlEnd: r.wlend != null ? parseFloat(r.wlend) : null,
-            // dp is (Rp/Rs)^2 as a fraction; multiply by 1e6 for ppm
-            depth: parseFloat(r.dp) * 1e6,
-            err1: r.dpe1 != null ? Math.abs(parseFloat(r.dpe1)) * 1e6 : null,
-            err2: r.dpe2 != null ? Math.abs(parseFloat(r.dpe2)) * 1e6 : null,
-            type: (r.trtype || "transmission").toLowerCase(),
-            instrument: r.instrument || null,
-            facility: r.facility || null,
-            ref: r.reference || null,
-          }));
-
-        CACHE.set(key, points);
-        setData(points);
+        const observations = rows.map((r) => ({
+          specType: r.spec_type || "Unknown",
+          instrument: r.instrument || null,
+          facility: r.facility || null,
+          minWl: r.minwavelng != null ? parseFloat(r.minwavelng) : null,
+          maxWl: r.maxwavelng != null ? parseFloat(r.maxwavelng) : null,
+          numPoints: r.num_datapoints != null ? parseInt(r.num_datapoints) : null,
+          bibcode: r.bibcode || null,
+        }));
+        CACHE.set(key, observations);
+        setData(observations);
       })
       .catch((err) => {
         setError(err.message);

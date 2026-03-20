@@ -1,192 +1,148 @@
-import { useMemo } from "react";
-
-// Color by facility/instrument
-function instrumentColor(facility, instrument) {
+// Colour-codes observations by facility
+function facilityColor(facility) {
   const f = (facility || "").toUpperCase();
-  const i = (instrument || "").toUpperCase();
-  if (f.includes("JWST")) {
-    if (i.includes("MIRI")) return "#f97316";   // orange
-    if (i.includes("NIRCAM")) return "#a78bfa"; // purple
-    return "#2dd4bf"; // teal — NIRSpec / default JWST
-  }
-  if (f.includes("HST") || f.includes("HUBBLE")) return "#60a5fa"; // blue
-  if (f.includes("SPITZER")) return "#f59e0b"; // amber
-  return "rgba(255,255,255,0.5)"; // fallback
+  if (f.includes("JWST") || f.includes("JAMES WEBB")) return "#2dd4bf"; // teal
+  if (f.includes("HST") || f.includes("HUBBLE"))       return "#60a5fa"; // blue
+  if (f.includes("SPITZER"))                            return "#f59e0b"; // amber
+  if (f.includes("KEPLER") || f.includes("K2"))        return "#a78bfa"; // purple
+  if (f.includes("TESS"))                               return "#34d399"; // green
+  return "rgba(255,255,255,0.45)";
 }
 
+// Short display label for the facility
 function facilityLabel(facility, instrument) {
   const f = (facility || "").toUpperCase();
-  const i = (instrument || "").toUpperCase();
-  if (f.includes("JWST")) return `JWST/${instrument || "?"}`;
-  if (f.includes("HST") || f.includes("HUBBLE")) return `HST/${instrument || "?"}`;
-  if (f.includes("SPITZER")) return "Spitzer";
+  if (f.includes("JWST") || f.includes("JAMES WEBB")) {
+    const i = (instrument || "").toUpperCase();
+    if (i.includes("MIRI"))    return "JWST/MIRI";
+    if (i.includes("NIRCAM"))  return "JWST/NIRCam";
+    if (i.includes("NIRSPEC")) return "JWST/NIRSpec";
+    if (i.includes("NIRISS"))  return "JWST/NIRISS";
+    return "JWST";
+  }
+  if (f.includes("HST") || f.includes("HUBBLE")) {
+    const i = (instrument || "").toUpperCase();
+    if (i.includes("STIS"))  return "HST/STIS";
+    if (i.includes("WFC3"))  return "HST/WFC3";
+    if (i.includes("NICMOS"))return "HST/NICMOS";
+    return "HST";
+  }
+  if (f.includes("SPITZER")) {
+    const i = (instrument || "").toUpperCase();
+    if (i.includes("IRAC")) return "Spitzer/IRAC";
+    if (i.includes("IRS"))  return "Spitzer/IRS";
+    return "Spitzer";
+  }
   return instrument || facility || "Unknown";
 }
 
-const CHART_PAD = { top: 20, right: 24, bottom: 44, left: 58 };
+// Badge colour by observation type
+function specTypeColor(specType) {
+  const s = (specType || "").toLowerCase();
+  if (s.includes("transmission")) return { bg: "rgba(45,212,191,0.12)", border: "rgba(45,212,191,0.3)", text: "#2dd4bf" };
+  if (s.includes("eclipse"))      return { bg: "rgba(249,115,22,0.12)",  border: "rgba(249,115,22,0.3)",  text: "#f97316" };
+  if (s.includes("emission"))     return { bg: "rgba(251,191,36,0.12)",  border: "rgba(251,191,36,0.3)",  text: "#fbbf24" };
+  if (s.includes("direct"))       return { bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.3)", text: "#a78bfa" };
+  return { bg: "rgba(255,255,255,0.06)", border: "rgba(255,255,255,0.15)", text: "rgba(255,255,255,0.6)" };
+}
 
-export default function SpectraChart({ data, accentColor, planetName }) {
-  // Separate transmission vs emission
-  const transmission = useMemo(() => data.filter((d) => d.type !== "emission"), [data]);
-  const emission = useMemo(() => data.filter((d) => d.type === "emission"), [data]);
-  const activeSet = transmission.length > 0 ? transmission : emission;
-  const chartTitle = transmission.length > 0 ? "Transmission Spectrum" : "Emission Spectrum";
-
-  const { minWl, maxWl, minDepth, maxDepth } = useMemo(() => {
-    if (activeSet.length === 0) return { minWl: 0, maxWl: 1, minDepth: 0, maxDepth: 1 };
-    const wls = activeSet.map((d) => d.wl);
-    const depths = activeSet.map((d) => d.depth);
-    const errHi = activeSet.map((d) => d.depth + (d.err1 ?? 0));
-    const errLo = activeSet.map((d) => d.depth - (d.err2 ?? 0));
-    return {
-      minWl: Math.min(...wls) * 0.97,
-      maxWl: Math.max(...wls) * 1.03,
-      minDepth: Math.min(...errLo) * 0.95,
-      maxDepth: Math.max(...errHi) * 1.05,
-    };
-  }, [activeSet]);
-
-  // Unique instruments for the legend
-  const instruments = useMemo(() => {
-    const seen = new Map();
-    activeSet.forEach((d) => {
-      const key = `${d.facility}:${d.instrument}`;
-      if (!seen.has(key)) seen.set(key, { facility: d.facility, instrument: d.instrument, color: instrumentColor(d.facility, d.instrument) });
-    });
-    return Array.from(seen.values());
-  }, [activeSet]);
-
-  const W = 560;
-  const H = 220;
-  const innerW = W - CHART_PAD.left - CHART_PAD.right;
-  const innerH = H - CHART_PAD.top - CHART_PAD.bottom;
-
-  const toX = (wl) => CHART_PAD.left + ((wl - minWl) / (maxWl - minWl)) * innerW;
-  const toY = (depth) => CHART_PAD.top + innerH - ((depth - minDepth) / (maxDepth - minDepth)) * innerH;
-
-  // X-axis ticks (wavelength in µm)
-  const xTicks = useMemo(() => {
-    const span = maxWl - minWl;
-    const step = span < 1 ? 0.1 : span < 5 ? 0.5 : span < 15 ? 2 : 5;
-    const ticks = [];
-    const start = Math.ceil(minWl / step) * step;
-    for (let v = start; v <= maxWl + 1e-9; v += step) {
-      ticks.push(Math.round(v * 100) / 100);
-    }
-    return ticks;
-  }, [minWl, maxWl]);
-
-  // Y-axis ticks (depth in ppm)
-  const yTicks = useMemo(() => {
-    const span = maxDepth - minDepth;
-    const mag = Math.pow(10, Math.floor(Math.log10(span / 4)));
-    const steps = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
-    const step = steps.find((s) => s * mag * 4 >= span * 0.6) * mag || mag;
-    const ticks = [];
-    const start = Math.ceil(minDepth / step) * step;
-    for (let v = start; v <= maxDepth + 1e-9; v += step) {
-      ticks.push(Math.round(v));
-    }
-    return ticks;
-  }, [minDepth, maxDepth]);
-
-  if (activeSet.length === 0) return null;
+export default function SpectraChart({ data }) {
+  if (!data || data.length === 0) return null;
 
   return (
-    <div style={{ width: "100%", overflowX: "auto" }}>
-      {/* Chart header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.28)" }}>
-          {chartTitle}
-          <span style={{ marginLeft: 8, color: "rgba(255,255,255,0.15)" }}>({activeSet.length} data points)</span>
-        </div>
-        {/* Legend */}
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          {instruments.map(({ facility, instrument, color }) => (
-            <div key={`${facility}:${instrument}`} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
-              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: "rgba(255,255,255,0.4)", letterSpacing: "0.05em" }}>
-                {facilityLabel(facility, instrument)}
-              </span>
-            </div>
-          ))}
-        </div>
+    <div>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: "rgba(255,255,255,0.28)" }}>
+          Atmospheric Observations
+        </span>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "rgba(255,255,255,0.15)" }}>
+          {data.length} published spectrum{data.length !== 1 ? "a" : ""}
+        </span>
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", maxWidth: W }}>
-        {/* Background */}
-        <rect x={0} y={0} width={W} height={H} fill="rgba(0,0,0,0)" />
+      {/* Observation rows */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {data.map((obs, i) => {
+          const colors = specTypeColor(obs.specType);
+          const fc = facilityColor(obs.facility);
+          const label = facilityLabel(obs.facility, obs.instrument);
+          const wlRange = obs.minWl != null && obs.maxWl != null
+            ? `${obs.minWl.toFixed(2)} – ${obs.maxWl.toFixed(2)} µm`
+            : null;
+          const adsUrl = obs.bibcode
+            ? `https://ui.adsabs.harvard.edu/abs/${obs.bibcode}`
+            : null;
 
-        {/* Grid lines */}
-        {yTicks.map((v) => (
-          <line key={v} x1={CHART_PAD.left} y1={toY(v)} x2={CHART_PAD.left + innerW} y2={toY(v)}
-            stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
-        ))}
-        {xTicks.map((v) => (
-          <line key={v} x1={toX(v)} y1={CHART_PAD.top} x2={toX(v)} y2={CHART_PAD.top + innerH}
-            stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
-        ))}
-
-        {/* Axes */}
-        <line x1={CHART_PAD.left} y1={CHART_PAD.top} x2={CHART_PAD.left} y2={CHART_PAD.top + innerH}
-          stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
-        <line x1={CHART_PAD.left} y1={CHART_PAD.top + innerH} x2={CHART_PAD.left + innerW} y2={CHART_PAD.top + innerH}
-          stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
-
-        {/* X-axis labels */}
-        {xTicks.map((v) => (
-          <text key={v} x={toX(v)} y={H - 6} textAnchor="middle"
-            fontFamily="Space Mono, monospace" fontSize={8} fill="rgba(255,255,255,0.3)">
-            {v}
-          </text>
-        ))}
-        <text x={CHART_PAD.left + innerW / 2} y={H - 0} textAnchor="middle"
-          fontFamily="Space Mono, monospace" fontSize={8} fill="rgba(255,255,255,0.2)">
-          WAVELENGTH (μm)
-        </text>
-
-        {/* Y-axis labels */}
-        {yTicks.map((v) => (
-          <text key={v} x={CHART_PAD.left - 5} y={toY(v) + 3} textAnchor="end"
-            fontFamily="Space Mono, monospace" fontSize={8} fill="rgba(255,255,255,0.3)">
-            {v >= 1000 ? `${v / 1000}k` : v}
-          </text>
-        ))}
-        <text x={12} y={CHART_PAD.top + innerH / 2} textAnchor="middle"
-          fontFamily="Space Mono, monospace" fontSize={8} fill="rgba(255,255,255,0.2)"
-          transform={`rotate(-90, 12, ${CHART_PAD.top + innerH / 2})`}>
-          DEPTH (PPM)
-        </text>
-
-        {/* Data: error bars + points */}
-        {activeSet.map((d, i) => {
-          const x = toX(d.wl);
-          const y = toY(d.depth);
-          const color = instrumentColor(d.facility, d.instrument);
           return (
-            <g key={i}>
-              {/* Wavelength range bar (horizontal) */}
-              {d.wlBeg != null && d.wlEnd != null && (
-                <line x1={toX(d.wlBeg)} y1={y} x2={toX(d.wlEnd)} y2={y}
-                  stroke={color} strokeWidth={1.5} opacity={0.35} />
+            <div key={i} style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "9px 12px",
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: 8,
+              flexWrap: "wrap",
+            }}>
+              {/* Spec type badge */}
+              <span style={{
+                fontFamily: "'Space Mono', monospace", fontSize: 8,
+                textTransform: "uppercase", letterSpacing: "0.08em",
+                padding: "2px 7px", borderRadius: 4,
+                background: colors.bg, border: `1px solid ${colors.border}`, color: colors.text,
+                flexShrink: 0,
+              }}>
+                {obs.specType}
+              </span>
+
+              {/* Facility dot + label */}
+              <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: fc, flexShrink: 0 }} />
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "rgba(255,255,255,0.7)", fontWeight: 500 }}>
+                  {label}
+                </span>
+              </div>
+
+              {/* Wavelength range */}
+              {wlRange && (
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "rgba(255,255,255,0.35)", letterSpacing: "0.04em" }}>
+                  {wlRange}
+                </span>
               )}
-              {/* Vertical error bar */}
-              {(d.err1 != null || d.err2 != null) && (
-                <line
-                  x1={x} y1={toY(d.depth + (d.err1 ?? 0))}
-                  x2={x} y2={toY(d.depth - (d.err2 ?? 0))}
-                  stroke={color} strokeWidth={1} opacity={0.6}
-                />
+
+              {/* Data points */}
+              {obs.numPoints != null && (
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "rgba(255,255,255,0.22)" }}>
+                  {obs.numPoints} pts
+                </span>
               )}
-              {/* Point */}
-              <circle cx={x} cy={y} r={2.5} fill={color} opacity={0.9} />
-            </g>
+
+              {/* ADS paper link */}
+              {adsUrl && (
+                <a
+                  href={adsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    marginLeft: "auto", fontFamily: "'Space Mono', monospace",
+                    fontSize: 8, color: "rgba(255,255,255,0.3)", textDecoration: "none",
+                    letterSpacing: "0.06em", flexShrink: 0,
+                    padding: "2px 6px", border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 4, transition: "color 0.15s, border-color 0.15s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.3)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.3)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+                >
+                  ↗ PAPER
+                </a>
+              )}
+            </div>
           );
         })}
-      </svg>
+      </div>
 
-      {/* Source note */}
-      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: "rgba(255,255,255,0.2)", marginTop: 6 }}>
+      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: "rgba(255,255,255,0.18)", marginTop: 10 }}>
         Source: NASA Exoplanet Archive · spectra table
       </div>
     </div>
