@@ -5,7 +5,11 @@ import Planet3D from "../components/Planet3D";
 import TypeBadge from "../components/TypeBadge";
 import Stat from "../components/Stat";
 import StarSystemDiagram from "../components/StarSystemDiagram";
+import SpectraChart from "../components/SpectraChart";
+import ADSPapers from "../components/ADSPapers";
 import { useNASAExoplanets } from "../hooks/useNASAExoplanets";
+import { useExoplanetSpectra } from "../hooks/useExoplanetSpectra";
+import { useADSPapers } from "../hooks/useADSPapers";
 
 // ─── Loading pulse ring while Three.js initializes ────────────────────────────
 function PlanetLoadingRing({ size, planet }) {
@@ -45,6 +49,9 @@ export default function PlanetPage() {
     () => planets.find((p) => p.slug === slug),
     [planets, slug]
   );
+
+  const { data: spectra, loading: spectraLoading } = useExoplanetSpectra(planet?.name ?? null);
+  const { papers, loading: papersLoading, unavailable: papersUnavailable } = useADSPapers(planet?.name ?? null);
 
   const currentIndex = useMemo(
     () => planets.findIndex((p) => p.slug === slug),
@@ -384,6 +391,29 @@ export default function PlanetPage() {
 
           {/* Star System Diagram */}
           <StarSystemDiagram planet={planet} allPlanets={planets} />
+
+          {/* Atmospheric Spectrum */}
+          {(spectraLoading || (spectra && spectra.length > 0)) && (
+            <div style={{ width: "100%", maxWidth: 580, padding: "20px 24px", background: "rgba(255,255,255,0.02)", borderRadius: 14, border: "1px solid rgba(255,255,255,0.05)" }}>
+              <CardLabel>Atmospheric Spectrum</CardLabel>
+              {spectraLoading ? (
+                <div style={{ height: 60, display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 12, height: 12, borderRadius: "50%", background: "rgba(255,255,255,0.08)", animation: "pulse 1.5s infinite alternate" }} />
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.1em" }}>FETCHING SPECTRUM…</span>
+                </div>
+              ) : (
+                <SpectraChart data={spectra} accentColor={planet.accentColor} planetName={planet.name} />
+              )}
+            </div>
+          )}
+
+          {/* Research Papers (NASA ADS) */}
+          {!papersUnavailable && (papersLoading || papers.length > 0) && (
+            <div style={{ width: "100%", maxWidth: 580, padding: "20px 24px", background: "rgba(255,255,255,0.02)", borderRadius: 14, border: "1px solid rgba(255,255,255,0.05)" }}>
+              <CardLabel style={{ marginBottom: 12 }}>Research Papers</CardLabel>
+              <ADSPapers papers={papers} loading={papersLoading} unavailable={papersUnavailable} />
+            </div>
+          )}
 
           {/* Prev / Next */}
           {(prevPlanet || nextPlanet) && (

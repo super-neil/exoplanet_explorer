@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { nasaRowToPlanet, slugify } from "../lib/planetUtils";
 import { EXOPLANETS as FEATURED } from "../data/exoplanets";
 
-const CACHE_KEY = "nasa_exoplanets_v4";
-const CACHE_TTL = 3600 * 6 * 1000; // 6 hours
+const CACHE_KEY = "nasa_exoplanets_v5"; // bump when schema changes
+const CACHE_TTL = 3600 * 6 * 1000; // 6 hours (client-side session fallback)
 
 // Normalize a name to bare alphanumeric for fuzzy matching.
 // "TRAPPIST-1 e" and "TRAPPIST-1e" both become "trappist1e".
@@ -25,34 +25,11 @@ function findFeatured(nasaName) {
   return FEATURED_BY_NORM.get(norm(nasaName)) ?? null;
 }
 
-const NASA_COLUMNS = [
-  "pl_name",
-  "hostname",
-  "pl_rade",
-  "pl_bmasse",
-  "pl_orbper",
-  "pl_eqt",
-  "st_teff",
-  "sy_dist",
-  "ra",
-  "dec",
-  "disc_year",
-  "discoverymethod",
-  "st_spectype",
-  "pl_controv_flag",
-].join(",");
-
-// Always use the local proxy path — configured via Vite in dev (vite.config.js)
-// and via platform rewrites in production (see _redirects / vercel.json).
-const TAP_BASE = "/nasa-tap/sync";
-
-const TAP_URL =
-  TAP_BASE +
-  "?" +
-  new URLSearchParams({
-    query: `SELECT ${NASA_COLUMNS} FROM pscomppars WHERE pl_controv_flag=0`,
-    format: "json",
-  });
+// In production this hits the Worker's /api/exoplanets endpoint, which serves
+// from Cloudflare KV (shared across all visitors, refreshed every 6 hours).
+// In dev, Vite proxies /api/exoplanets → the same Worker via `wrangler dev`,
+// but also falls back gracefully to a direct NASA fetch if KV isn't set up yet.
+const TAP_URL = "/api/exoplanets";
 
 function readCache() {
   try {

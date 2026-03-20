@@ -1,16 +1,32 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "exoplanet-explorer",
-  "main": "src/worker.js",
-  "compatibility_date": "2025-09-27",
-  "observability": {
-    "enabled": true
-  },
-  "assets": {
-    "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
-  },
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "exoplanet-explorer",
+	"main": "src/worker.js",
+	"compatibility_date": "2025-09-27",
+	"observability": {
+		"enabled": true
+	},
+	"assets": {
+		"binding": "ASSETS",
+		"not_found_handling": "single-page-application"
+	},
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"kv_namespaces": [
+		{
+			"binding": "NASA_CACHE",
+			"id": "85c264169e244b11a42c19e74cbd07f9",
+			"preview_id": "a107fd3dbab24a9a97d7d61702e09f7e",
+			"remote": true
+		}
+	],
+	// ── KV: shared planet cache (one NASA fetch per 6 hours, all visitors) ───────
+	// Uncomment and fill in IDs after running:
+	//   wrangler kv namespace create NASA_CACHE          → copy "id"
+	//   wrangler kv namespace create NASA_CACHE --preview → copy "preview_id"
+	//
+	// "kv_namespaces": [
+	//   { "binding": "NASA_CACHE", "id": "PASTE_ID_HERE", "preview_id": "PASTE_PREVIEW_ID_HERE" }
+	// ]
 }
