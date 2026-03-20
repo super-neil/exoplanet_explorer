@@ -19,7 +19,7 @@ Each planet gets a detail page with:
 - Narrative "What You'd Experience" text tailored to the planet's conditions
 
 ### 3D Star Map
-A navigable WebGL space showing thousands of real star systems as glowing points, positioned using actual RA/Dec/distance coordinates from the NASA catalog. Color-coded by stellar type (red dwarf, sun-like, hot star). Filter by maximum distance. Click any star system to navigate to one of its planets.
+A navigable WebGL space showing thousands of real star systems as glowing billboard sprites, positioned using actual RA/Dec/distance coordinates from the NASA catalog. Color-coded by stellar type (red dwarf, sun-like, hot star). Habitable-zone systems are highlighted in teal and rendered larger, with permanent 3D labels floating above them. A collapsible side panel lists all habitable systems in range sorted by distance. A **Habitable Only** toggle filters the map to just those systems with all labels shown. Filter by maximum distance (200 ly → 5,000 ly). Click any star system to navigate to one of its planets.
 
 ### Discovery Timeline
 An animated dot-plot of every exoplanet ever found, organized by discovery year. Each dot is a real planet, colored by type. Use play/pause controls, a scrubber, and speed buttons to watch the history of exoplanet discovery unfold from 1992 to the present. Click any dot to open that planet's detail page.
@@ -35,7 +35,7 @@ Live stats (total confirmed planets, planetary systems, potentially habitable wo
 
 NASA's [Exoplanet Archive TAP API](https://exoplanetarchive.ipac.caltech.edu/docs/TAP/usingTAP.html) (`pscomppars` table) is queried on first load and cached in `sessionStorage` for 6 hours. A set of 8 hand-curated "featured" planets (TRAPPIST-1e, Kepler-442b, 55 Cancri e, etc.) carry extra metadata — rich descriptions, atmosphere text, hand-tuned visuals — that is merged on top of the live NASA rows by fuzzy name matching (e.g. `"TRAPPIST-1 e"` → `"trappist-1e"`).
 
-In development, requests are proxied through Vite (`/nasa-tap → exoplanetarchive.ipac.caltech.edu`) to avoid CORS. In production the API is called directly.
+Requests always go through a `/nasa-tap/sync` proxy path to avoid CORS. In development, Vite forwards this to `exoplanetarchive.ipac.caltech.edu`. In production, `src/worker.js` (a Cloudflare Worker) intercepts `/nasa-tap/*` requests and proxies them upstream, then falls through to `env.ASSETS.fetch()` for all other paths. SPA routing (`/planet/xyz` → `index.html`) is handled by `not_found_handling: single-page-application` in `wrangler.jsonc`.
 
 ### 3D planet rendering
 
@@ -59,7 +59,7 @@ x = dist × cos(dec) × cos(ra)
 y = dist × sin(dec)
 z = dist × cos(dec) × sin(ra)
 ```
-Rendered as an `InstancedMesh` of low-poly spheres, sized by planet count and habitable-zone status, colored by stellar temperature.
+Rendered as an `InstancedMesh` of billboard-oriented quad sprites with a radial glow texture and additive blending, sized by planet count and habitable-zone status, colored by stellar temperature. Habitable systems override the star color to teal (`#40e0c0`) and render at 2× size. A separate invisible `InstancedMesh` handles pointer hit detection without affecting the visual layer. `Html` components from `@react-three/drei` render floating labels above habitable systems (and all systems at ≤200 ly or when the habitable-only filter is active).
 
 ---
 
@@ -67,12 +67,15 @@ Rendered as an `InstancedMesh` of low-poly spheres, sized by planet count and ha
 
 | Layer | Technology |
 |---|---|
-| Framework | React 19 + Vite |
-| Routing | React Router v6 |
+| Layer | Technology |
+|---|---|
+| Framework | React 19 + Vite 8 |
+| Routing | React Router v7 |
 | Styling | Tailwind CSS v4 (Vite plugin) + inline styles |
 | 3D | Three.js · @react-three/fiber · @react-three/drei |
 | Data | NASA Exoplanet Archive TAP API |
 | Fonts | Audiowide · Space Mono · DM Sans (Google Fonts) |
+| Deployment | Cloudflare Pages + Wrangler v4 |
 
 ---
 
@@ -112,3 +115,19 @@ npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173). NASA data loads on first visit and is cached for 6 hours; subsequent navigations are instant.
+
+## Deployment
+
+Hosted on Cloudflare Pages via Wrangler. The `wrangler.jsonc` config sets SPA routing (`not_found_handling: single-page-application`) so all paths serve `index.html`.
+
+```bash
+npm run deploy        # builds with Vite then publishes via wrangler
+```
+
+To run a local preview of the production build:
+
+```bash
+npm run preview       # vite build + wrangler dev
+```
+
+Secrets for local Wrangler dev (e.g. any future API keys) go in `.dev.vars` — this file is gitignored and never committed.

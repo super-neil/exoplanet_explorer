@@ -1,0 +1,32 @@
+# ── Dependencies ───────────────────────────────────────────
+node_modules/
+
+# ── Build output ────────────────────────────────────────────
+dist/
+
+# ── Cloudflare / Wrangler ───────────────────────────────────
+.wrangler/
+.dev.vars            # local secrets for wrangler dev (never commit)
+.dev.vars.*
+
+# ── Environment variables ───────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.production      # guard against committing prod secrets
+
+# ── Vite / tooling cache ────────────────────────────────────
+*.local
+*.tsbuildinfo
+*.eslintcache
+*.cache
+coverage/
+
+# ── Editor & OS ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+*.log.*
+
+# ── Claude Code session files ───────────────────────────────
+.claude/
