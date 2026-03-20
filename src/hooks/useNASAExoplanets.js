@@ -42,8 +42,9 @@ const NASA_COLUMNS = [
   "pl_controv_flag",
 ].join(",");
 
-// Use Vite dev proxy in development; direct URL in production
-const TAP_BASE = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync";
+// Always use the local proxy path — configured via Vite in dev (vite.config.js)
+// and via platform rewrites in production (see _redirects / vercel.json).
+const TAP_BASE = "/nasa-tap/sync";
 
 const TAP_URL =
   TAP_BASE +

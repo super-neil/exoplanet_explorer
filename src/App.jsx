@@ -18,7 +18,37 @@ export default function App() {
         <Route path="/timeline" element={<TimelinePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <Footer />
     </BrowserRouter>
+  );
+}
+
+function Footer() {
+  return (
+    <div
+      style={{
+        width: "100%",
+        padding: "20px 24px",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "rgba(0,0,0,0.6)",
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        backdropFilter: "blur(10px)",
+      }}
+    >
+      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "rgba(255,255,255,0.28)" }}>
+        Built by{" "}
+        <a
+          href="https://www.neeeeel.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none", borderBottom: "1px solid rgba(255,255,255,0.2)" }}
+        >
+          Neeeeel Corp
+        </a>
+      </span>
+    </div>
   );
 }
 
@@ -38,10 +68,10 @@ function NotFound() {
       <div style={{ fontSize: 80, opacity: 0.15, color: "#fff" }}>◎</div>
       <h1
         style={{
-          fontFamily: "'Playfair Display', serif",
+          fontFamily: "'Audiowide', cursive",
           fontSize: 32,
           color: "#fff",
-          fontWeight: 700,
+          fontWeight: 400,
         }}
       >
         404 — Lost in Space

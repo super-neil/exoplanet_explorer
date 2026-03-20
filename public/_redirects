@@ -1,0 +1,5 @@
+# Proxy NASA Exoplanet Archive TAP API to avoid CORS (Netlify)
+/nasa-tap/*  https://exoplanetarchive.ipac.caltech.edu/TAP/:splat  200
+
+# SPA fallback — all routes serve index.html
+/*  /index.html  200

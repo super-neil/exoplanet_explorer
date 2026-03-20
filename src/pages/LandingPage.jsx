@@ -159,9 +159,9 @@ export default function LandingPage() {
 
           <h1
             style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: "clamp(44px, 8vw, 84px)",
-              fontWeight: 700,
+              fontFamily: "'Audiowide', cursive",
+              fontSize: "clamp(38px, 7vw, 72px)",
+              fontWeight: 400,
               color: "#fff",
               letterSpacing: "-0.03em",
               lineHeight: 1.05,
@@ -326,11 +326,10 @@ export default function LandingPage() {
             </div>
             <h2
               style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: "clamp(28px, 5vw, 42px)",
-                fontWeight: 700,
+                fontFamily: "'Audiowide', cursive",
+                fontSize: "clamp(24px, 4vw, 36px)",
+                fontWeight: 400,
                 color: "#fff",
-                letterSpacing: "-0.02em",
               }}
             >
               Remarkable Discoveries
@@ -407,11 +406,10 @@ export default function LandingPage() {
             </div>
             <h2
               style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: "clamp(28px, 5vw, 42px)",
-                fontWeight: 700,
+                fontFamily: "'Audiowide', cursive",
+                fontSize: "clamp(24px, 4vw, 36px)",
+                fontWeight: 400,
                 color: "#fff",
-                letterSpacing: "-0.02em",
               }}
             >
               A History of Finding Worlds
@@ -536,9 +534,9 @@ export default function LandingPage() {
         <div style={{ maxWidth: 600, margin: "0 auto" }}>
           <h2
             style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: "clamp(28px, 5vw, 48px)",
-              fontWeight: 700,
+              fontFamily: "'Audiowide', cursive",
+              fontSize: "clamp(24px, 4vw, 40px)",
+              fontWeight: 400,
               color: "#fff",
               letterSpacing: "-0.02em",
               marginBottom: 20,

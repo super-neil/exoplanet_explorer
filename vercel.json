@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/nasa-tap/:path*",
+      "destination": "https://exoplanetarchive.ipac.caltech.edu/TAP/:path*"
+    },
+    {
+      "source": "/((?!nasa-tap).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -108,7 +108,7 @@ export default function PlanetPage() {
         }}
       >
         <div style={{ fontSize: 64, opacity: 0.12, color: "#fff" }}>◎</div>
-        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, color: "#fff", fontWeight: 700 }}>
+        <h1 style={{ fontFamily: "'Audiowide', cursive", fontSize: 24, color: "#fff", fontWeight: 400 }}>
           Planet not found
         </h1>
         <button
@@ -197,7 +197,7 @@ export default function PlanetPage() {
           {/* Title */}
           <div style={{ textAlign: "center" }}>
             <TypeBadge type={planet.type} habitableZone={planet.habitableZone} accent={planet.accentColor} />
-            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(32px, 6vw, 52px)", fontWeight: 700, color: "#fff", margin: "14px 0 6px", letterSpacing: "-0.02em" }}>
+            <h1 style={{ fontFamily: "'Audiowide', cursive", fontSize: "clamp(28px, 5vw, 46px)", fontWeight: 400, color: "#fff", margin: "14px 0 6px" }}>
               {planet.name}
             </h1>
             <p style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "rgba(255,255,255,0.28)", textTransform: "uppercase", letterSpacing: "0.15em" }}>
@@ -213,11 +213,11 @@ export default function PlanetPage() {
           {/* Stats row */}
           <div style={{
             display: "grid",
-            gridTemplateColumns: planet.esi != null ? "repeat(5, 1fr)" : "repeat(4, 1fr)",
-            gap: 18,
+            gridTemplateColumns: "repeat(auto-fit, minmax(88px, 1fr))",
+            gap: 14,
             width: "100%",
             maxWidth: 540,
-            padding: "22px",
+            padding: "18px 16px",
             background: "rgba(255,255,255,0.03)",
             borderRadius: 16,
             border: "1px solid rgba(255,255,255,0.06)",
@@ -288,44 +288,97 @@ export default function PlanetPage() {
                     {(planet.starTemp ?? 5000) < 3500 ? "deep crimson" : (planet.starTemp ?? 5000) < 5000 ? "amber orange" : "warm gold"}
                   </strong>{" "}
                   beneath a {(planet.starType ?? "").toLowerCase() || "distant"} star.
-                  {planet.orbitalPeriod && <> A year here lasts just <strong style={{ color: "rgba(255,255,255,0.85)" }}>{planet.orbitalPeriod} Earth days</strong>.</>}
+                  {planet.orbitalPeriod && (() => {
+                    const d = planet.orbitalPeriod;
+                    const yearStr = d < 10
+                      ? `A year lasts just ${d} Earth days`
+                      : d < 365
+                        ? `One full year passes in ${d} Earth days`
+                        : `A single year spans ${d} Earth days`;
+                    return <> {yearStr}.</>
+                  })()}
                 </>
               ) : (
                 <>
-                  This is no place for humans.{" "}
-                  {tempC != null && planet.tempK > 1000 ? `At ${tempC}°C, the surface is hot enough to melt rock. ` : ""}
-                  {tempC != null && planet.tempK < 200 ? `At ${tempC}°C, the cold would be lethal instantly. ` : ""}
-                  {(planet.type === "Gas Giant" || planet.type === "Hot Jupiter") ? "With no solid surface, you'd sink endlessly into crushing gas layers. " : ""}
-                  {planet.surfaceGravity != null && <>Gravity pulls at <strong style={{ color: "rgba(255,255,255,0.85)" }}>{planet.surfaceGravity}g</strong> — </>}
-                  {planet.orbitalPeriod != null && <>a year passes in just <strong style={{ color: "rgba(255,255,255,0.85)" }}>{planet.orbitalPeriod} Earth days</strong>.</>}
+                  {(() => {
+                    if (planet.type === "Lava World") return "Molten rock flows across this hellscape. ";
+                    if (planet.type === "Hot Jupiter") return "Nothing could survive in this bloated gas inferno. ";
+                    if (planet.type === "Gas Giant") return "With no solid surface, you'd sink endlessly into crushing layers of gas. ";
+                    if (planet.type === "Neptune-like") return "Crushing pressure and violent storms define this ice giant. ";
+                    if (tempC != null && planet.tempK > 700) return `At ${tempC}°C, searing temperatures make survival here impossible. `;
+                    if (tempC != null && planet.tempK < 150) return `At ${tempC}°C, this world is locked in an eternal deep freeze. `;
+                    const variants = [
+                      "This is no place for humans. ",
+                      "Survival here is impossible. ",
+                      "Human life could not persist on this world. ",
+                    ];
+                    return variants[(planet.name?.charCodeAt(0) ?? 0) % variants.length];
+                  })()}
+                  {planet.surfaceGravity != null && (
+                    <>Gravity here is <strong style={{ color: "rgba(255,255,255,0.85)" }}>{planet.surfaceGravity}g</strong>
+                    {planet.orbitalPeriod != null ? ", and " : "."}</>
+                  )}
+                  {planet.orbitalPeriod != null && (() => {
+                    const d = planet.orbitalPeriod;
+                    const prefix = planet.surfaceGravity != null ? "" : "One ";
+                    const yearStr = d < 10
+                      ? `${prefix}orbit completes in just ${d} Earth days`
+                      : d < 365
+                        ? `${prefix}year passes in ${d} Earth days`
+                        : `${prefix}orbit takes ${d} Earth days`;
+                    return <>{yearStr}.</>;
+                  })()}
                 </>
               )}
             </div>
           </div>
 
-          {/* Comparison bars */}
+          {/* Comparison bars — bidirectional, centered on Earth (1.0) */}
           <div style={{ width: "100%", maxWidth: 580, padding: "20px 24px", background: "rgba(255,255,255,0.02)", borderRadius: 14, border: "1px solid rgba(255,255,255,0.05)" }}>
             <CardLabel>Compared to Earth</CardLabel>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 18, marginTop: 16 }}>
               {[
-                { label: "Radius", value: planet.radius, unit: "× Earth", max: 22 },
-                { label: "Mass", value: planet.mass != null ? Math.min(planet.mass, 400) : null, unit: "× Earth", max: 400, rawValue: planet.mass },
-                { label: "Surface Gravity", value: planet.surfaceGravity, unit: "g", max: 3 },
-              ].map(({ label, value, unit, max, rawValue }) => (
-                <div key={label}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "rgba(255,255,255,0.38)" }}>{label}</span>
-                    <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: planet.accentColor }}>
-                      {rawValue ?? value != null ? `${rawValue ?? value} ${unit}` : "unknown"}
-                    </span>
+                { label: "Radius", value: planet.radius, unit: "R⊕", logMax: 14 },
+                { label: "Mass", value: planet.mass, unit: "M⊕", logMax: 200 },
+                { label: "Surface Gravity", value: planet.surfaceGravity, unit: "g", logMax: 5 },
+              ].map(({ label, value, unit, logMax }) => {
+                // Use log scale so small deviations from 1 are still visible
+                const leftPct  = value != null && value > 0 && value < 1
+                  ? Math.min(Math.log(1 / value) / Math.log(1 / 0.05) * 100, 100)
+                  : 0;
+                const rightPct = value != null && value >= 1
+                  ? Math.min(Math.log(value) / Math.log(logMax) * 100, 100)
+                  : 0;
+                return (
+                  <div key={label}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "rgba(255,255,255,0.38)" }}>{label}</span>
+                      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: value != null ? planet.accentColor : "rgba(255,255,255,0.2)" }}>
+                        {value != null ? `${value} ${unit}` : "unknown"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      {/* Left half: smaller than Earth, fills right-to-left */}
+                      <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.05)", borderRadius: "2px 0 0 2px", overflow: "hidden", display: "flex", justifyContent: "flex-end" }}>
+                        {leftPct > 0 && (
+                          <div style={{ width: `${leftPct}%`, height: "100%", background: `linear-gradient(270deg, ${planet.accentColor}, transparent)`, borderRadius: "2px 0 0 2px", transition: "width 1s ease" }} />
+                        )}
+                      </div>
+                      {/* Earth center tick */}
+                      <div style={{ width: 1, height: 10, background: "rgba(255,255,255,0.2)", flexShrink: 0 }} />
+                      {/* Right half: larger than Earth, fills left-to-right */}
+                      <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.05)", borderRadius: "0 2px 2px 0", overflow: "hidden" }}>
+                        {rightPct > 0 && (
+                          <div style={{ width: `${rightPct}%`, height: "100%", background: `linear-gradient(90deg, transparent, ${planet.accentColor})`, borderRadius: "0 2px 2px 0", transition: "width 1s ease" }} />
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "center", marginTop: 3 }}>
+                      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 7, color: "rgba(255,255,255,0.14)", letterSpacing: "0.08em" }}>= EARTH</span>
+                    </div>
                   </div>
-                  <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                    {value != null && (
-                      <div style={{ height: "100%", width: `${Math.min((value / max) * 100, 100)}%`, background: `linear-gradient(90deg, ${planet.accentColor}70, ${planet.accentColor})`, borderRadius: 2, transition: "width 1s ease" }} />
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

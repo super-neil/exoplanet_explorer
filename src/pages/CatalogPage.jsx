@@ -114,7 +114,7 @@ export default function CatalogPage() {
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(255,255,255,0.22)", marginBottom: 12 }}>
             Kepler · TESS · Radial Velocity · Transit
           </div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(36px, 6vw, 56px)", fontWeight: 700, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: 10 }}>
+          <h1 style={{ fontFamily: "'Audiowide', cursive", fontSize: "clamp(30px, 5vw, 48px)", fontWeight: 400, color: "#fff", lineHeight: 1.15, marginBottom: 10 }}>
             Exoplanet Catalog
           </h1>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "rgba(255,255,255,0.3)", fontWeight: 300 }}>
